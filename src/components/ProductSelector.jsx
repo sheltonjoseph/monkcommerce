@@ -17,10 +17,9 @@ import {
 } from '@mui/icons-material';
 import ProductSelectorDialog from './ProductSelectorDialog';
 import KeyboardArrowUpIcon from '@mui/icons-material/KeyboardArrowUp';
-import { DragDropContext, Draggable, Droppable } from 'react-beautiful-dnd';
+
 
 const ProductSelector = ({ initialSelectedProducts, onUpdateProducts }) => {
-  const [isDiscountMode, setIsDiscountMode] = useState(false);
   const [productDiscounts, setProductDiscounts] = useState({});
   const [variantVisibility, setVariantVisibility] = useState({});
   const [open, setOpen] = useState(false);

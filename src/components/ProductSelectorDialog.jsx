@@ -20,7 +20,6 @@ import {
 const ProductSelectorDialog = ({ open, onClose, initialSelectedProducts, onProductsSelect, }) => {
   const [searchQuery, setSearchQuery] = useState('');
   const [selectedProducts, setSelectedProducts] = useState(initialSelectedProducts || []);
-  const [filteredProducts, setFilteredProducts] = useState([]);
   const [products, setProducts] = useState([]); // State to hold fetched products
   const [page, setPage] = useState(0); // Track the current page
   const [hasMore, setHasMore] = useState(true); // Track if more products are available
@@ -31,7 +30,6 @@ const ProductSelectorDialog = ({ open, onClose, initialSelectedProducts, onProdu
   useEffect(() => {
     setPage(0);
     setProducts([]);
-    setFilteredProducts([]);
     setHasMore(true);
   }, [searchQuery]);
 
