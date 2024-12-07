@@ -1,23 +1,22 @@
-import logo from './logo.svg';
-import './App.css';
+import React, { useState } from "react";
+import ProductSelector from "./components/ProductSelector";
+
 
 function App() {
+  const [initialSelectedProducts, setInitialSelectedProducts] = useState([]); // State in parent to hold selected product
+  
+  const handleProductsUpdate = (products) => {
+    setInitialSelectedProducts(products); // Update selected products
+  };
+
+  console.log('selectedProduct',initialSelectedProducts)
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.js</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      <h1>Monk Commerce Product Selection</h1>
+      <ProductSelector   initialSelectedProducts={initialSelectedProducts}
+        onUpdateProducts={handleProductsUpdate} /> {/* Pass callback */}
+
     </div>
   );
 }
