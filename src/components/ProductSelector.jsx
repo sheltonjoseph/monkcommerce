@@ -23,6 +23,7 @@ const ProductSelector = ({ initialSelectedProducts, onUpdateProducts }) => {
   const [productDiscounts, setProductDiscounts] = useState({});
   const [variantVisibility, setVariantVisibility] = useState({});
   const [open, setOpen] = useState(false);
+  const [draggedItemIndex, setDraggedItemIndex] = useState(null);
 
   const addDiscount = (productId, variantId = null) => {
     const discountKey = variantId ? `${productId}-${variantId}` : productId;
@@ -92,6 +93,38 @@ const ProductSelector = ({ initialSelectedProducts, onUpdateProducts }) => {
   const handleDialogOpen = () => {
     setOpen(true);
   };
+
+  const handleDragStart = (index) => {
+    setDraggedItemIndex(index);
+  };
+
+  const handleDragOver = (e) => {
+    e.preventDefault();
+  };
+
+  const handleDrop = (index, type, productId = null) => {
+    if (draggedItemIndex === null || draggedItemIndex === index) return;
+
+    if (type === 'product') {
+      const updatedProducts = Array.from(initialSelectedProducts);
+      const [movedProduct] = updatedProducts.splice(draggedItemIndex, 1);
+      updatedProducts.splice(index, 0, movedProduct);
+      setDraggedItemIndex(null);
+      onUpdateProducts(updatedProducts);
+    } else if (type === 'variant' && productId !== null) {
+      const product = initialSelectedProducts.find((p) => p.id === productId);
+      const updatedVariants = Array.from(product.variants);
+      const [movedVariant] = updatedVariants.splice(draggedItemIndex, 1);
+      updatedVariants.splice(index, 0, movedVariant);
+
+      const updatedProducts = initialSelectedProducts.map((p) =>
+        p.id === productId ? { ...p, variants: updatedVariants } : p
+      );
+      setDraggedItemIndex(null);
+      onUpdateProducts(updatedProducts);
+    }
+  };
+
 
   const renderDiscountSection = (productId, variantId = null) => {
     const discountKey = variantId ? `${productId}-${variantId}` : productId;
@@ -184,33 +217,34 @@ const ProductSelector = ({ initialSelectedProducts, onUpdateProducts }) => {
     <Box sx={{ mt: 1 }}>
       {variants.map((variant, vIndex) => (
         <Box
-          key={vIndex}
+          key={variant.id}
+          draggable
+          onDragStart={() => handleDragStart(vIndex)}
+          onDragOver={handleDragOver}
+          onDrop={() => handleDrop(vIndex, 'variant', productId)}
           sx={{
             display: 'flex',
             alignItems: 'center',
             gap: 1,
             ml: 3,
-            mt: 1
+            mt: 1,
           }}
         >
           <DragIndicatorIcon
             sx={{
               color: 'text.secondary',
               cursor: 'move',
-              fontSize: 20
+              fontSize: 20,
             }}
           />
           <Paper
-            elevation={0}
+            elevation={1} // Default elevation for normal MUI borders
             sx={{
               display: 'flex',
               alignItems: 'center',
-              border: '1px solid',
-              borderColor: 'divider',
-              borderRadius: 20,
               height: '32px',
               flex: 1,
-              maxWidth: '250px'
+              maxWidth: '250px',
             }}
           >
             <Typography
@@ -218,17 +252,14 @@ const ProductSelector = ({ initialSelectedProducts, onUpdateProducts }) => {
                 fontSize: '14px',
                 color: 'text.primary',
                 pl: 1.5,
-                flex: 1
+                flex: 1,
               }}
             >
               {variant.title}
             </Typography>
           </Paper>
           {renderDiscountSection(productId, variant.id)}
-          <IconButton
-            size="small"
-            onClick={() => removeVariant(productId, variant.id)}
-          >
+          <IconButton size="small" onClick={() => removeVariant(productId, variant.id)}>
             <CloseIcon sx={{ fontSize: 18 }} />
           </IconButton>
         </Box>
@@ -236,120 +267,140 @@ const ProductSelector = ({ initialSelectedProducts, onUpdateProducts }) => {
     </Box>
   );
 
-  const renderProductBox = (product = null) => (
-    <Box sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2 }}>
-      <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
-        <DragIndicatorIcon
-          sx={{
-            color: 'text.secondary',
-            cursor: 'move',
-            mt: 0.5,
-            fontSize: 20
-          }}
-        />
-
-        <Box sx={{ flex: 1 }}>
-          <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
-            <Paper
-              elevation={0}
-              sx={{
-                display: 'flex',
-                alignItems: 'center',
-                border: '1px solid',
-                borderColor: 'divider',
-                borderRadius: 1,
-                height: '32px',
-                flex: 1,
-                maxWidth: '250px'
-              }}
-            >
-              <Typography
+  const renderProductBox = (product, index) => {
+    // Ensure product is defined
+    if (!product) {
+      return null;
+    }
+  
+    return (
+      <Box
+        draggable
+        onDragStart={() => handleDragStart(index)}
+        onDragOver={handleDragOver}
+        onDrop={
+          !variantVisibility[product.id]
+            ? () => handleDrop(index, 'product')
+            : undefined
+        }
+        sx={{ display: 'flex', flexDirection: 'column', gap: 1, p: 2 }}
+      >
+        <Box sx={{ display: 'flex', alignItems: 'flex-start', gap: 1 }}>
+          <DragIndicatorIcon
+            sx={{
+              color: 'text.secondary',
+              cursor: 'move',
+              mt: 0.5,
+              fontSize: 20,
+            }}
+          />
+  
+          <Box sx={{ flex: 1 }}>
+            <Box sx={{ display: 'flex', alignItems: 'center', gap: 1, mb: 1 }}>
+              <Paper
+                elevation={0}
                 sx={{
-                  fontSize: '14px',
-                  color: 'text.primary',
-                  pl: 1.5,
-                  flex: 1
+                  display: 'flex',
+                  alignItems: 'center',
+                  border: '1px solid',
+                  borderColor: 'divider',
+                  borderRadius: 1,
+                  height: '32px',
+                  flex: 1,
+                  maxWidth: '250px',
                 }}
               >
-                {product ? product.title : 'Select Product'}
-              </Typography>
-              <IconButton size="small" sx={{ mr: 0.5 }} onClick={handleDialogOpen}>
-                <EditIcon sx={{ fontSize: 16 }} />
-              </IconButton>
-            </Paper>
-
-            {renderDiscountSection(product?.id)}
-            {product && (
+                <Typography
+                  sx={{
+                    fontSize: '14px',
+                    color: 'text.primary',
+                    pl: 1.5,
+                    flex: 1,
+                  }}
+                >
+                  {product.title || 'Select Product'}
+                </Typography>
+                <IconButton
+                  size="small"
+                  sx={{ mr: 0.5 }}
+                  onClick={() => handleDialogOpen(product)}
+                >
+                  <EditIcon sx={{ fontSize: 16 }} />
+                </IconButton>
+              </Paper>
+  
+              {renderDiscountSection(product.id)}
               <IconButton
                 size="small"
                 onClick={() => removeProduct(product.id)}
               >
                 <CloseIcon sx={{ fontSize: 18 }} />
               </IconButton>
+            </Box>
+  
+            {product.variants?.length > 0 && (
+              <>
+                <Box sx={{ ml: -2.5 }}>
+                  <Link
+                    component="button"
+                    underline="hover"
+                    onClick={() => toggleVariantVisibility(product.id)}
+                    sx={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      fontSize: '14px',
+                      color: 'primary.main',
+                    }}
+                  >
+                    {variantVisibility[product.id] ? 'Hide variants' : 'Show variants'}
+                    <KeyboardArrowUpIcon
+                      sx={{
+                        fontSize: 18,
+                        transform: variantVisibility[product.id] ? 'none' : 'rotate(180deg)',
+                        transition: 'transform 0.2s',
+                      }}
+                    />
+                  </Link>
+                </Box>
+                {variantVisibility[product.id] &&
+                  renderVariants(product.variants, product.id)}
+              </>
             )}
           </Box>
-
-          {product && product.variants && product.variants.length > 0 && (
-            <>
-              <Box sx={{ ml: -2.5 }}>
-                <Link
-                  component="button"
-                  underline="hover"
-                  onClick={() => toggleVariantVisibility(product.id)}
-                  sx={{
-                    display: 'flex',
-                    alignItems: 'center',
-                    fontSize: '14px',
-                    color: 'primary.main'
-                  }}
-                >
-                  {variantVisibility[product.id] ? 'Hide variants' : 'Show variants'}
-                  <KeyboardArrowUpIcon
-                    sx={{
-                      fontSize: 18,
-                      transform: variantVisibility[product.id] ? 'none' : 'rotate(180deg)',
-                      transition: 'transform 0.2s'
-                    }}
-                  />
-                </Link>
-              </Box>
-              {variantVisibility[product.id] && renderVariants(product.variants, product.id)}
-            </>
-          )}
         </Box>
       </Box>
-    </Box>
-  );
+    );
+  };
 
   return (
     <>
-    {initialSelectedProducts.length === 0 ? (
-      renderProductBox()
-    ) : (
-      initialSelectedProducts.map((product, index) => (
-        <React.Fragment key={index}>
-          {renderProductBox(product)}
-        </React.Fragment>
-      ))
-    )}
+      {initialSelectedProducts.length === 0 ? (
+        renderProductBox()
+      ) : (
+        initialSelectedProducts.map((product, index) => (
+          <React.Fragment key={product?.id || index}>
+            {renderProductBox(product, index)} {/* Render each product in the list */}
+          </React.Fragment>
+        ))
+      )}
 
-    <Button
-      variant="outlined"
-      color="success"
-      sx={{ mt: 2, ml: 50 }}
-      onClick={addNewProductBox}
-    >
-      Add Product
-    </Button>
+      <Button
+        variant="outlined"
+        color="success"
+        sx={{ mt: 2, ml: 50 }}
+        onClick={addNewProductBox}
+      >
+        Add Product
+      </Button>
 
-    {/* Keep the ProductSelectorDialog for when Edit icon is clicked */}
-    <ProductSelectorDialog
-      open={open}
-      onClose={handleClose}
-      initialSelectedProducts={initialSelectedProducts}
-      onProductsSelect={handleProductsSelect}
-    />
-  </>
+      {/* Keep the ProductSelectorDialog for when Edit icon is clicked */}
+      <ProductSelectorDialog
+        open={open}
+        onClose={handleClose}
+        initialSelectedProducts={initialSelectedProducts}
+        onProductsSelect={handleProductsSelect}
+      />
+    </>
   );
 };
 
