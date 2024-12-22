@@ -238,13 +238,14 @@ const ProductSelector = ({ initialSelectedProducts, onUpdateProducts }) => {
             }}
           />
           <Paper
-            elevation={1} // Default elevation for normal MUI borders
+            elevation={2} // Default elevation for normal MUI borders
             sx={{
               display: 'flex',
               alignItems: 'center',
               height: '32px',
               flex: 1,
               maxWidth: '250px',
+              borderRadius:'50px'
             }}
           >
             <Typography
